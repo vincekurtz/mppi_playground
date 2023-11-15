@@ -6,96 +6,14 @@ import time
 from typing import List
 
 from base import ProblemData, Obstacle
+from vanilla_mppi import vanilla_mppi
 
-def robot_dynamics(x: np.array, u: np.array, data: ProblemData) -> np.array:
+def robot_dynamics(x: np.array, u: np.array) -> np.array:
     """
-    Given the state x and control u, return the next state for a simple
+    Given the state x and control u, return xdot for a simple
     robot with integrator dynamics. 
     """
-    return x + u * data.time_step
-
-def sample_control_tape(u_nom: np.array, data: ProblemData) -> np.array:
-    """
-    Given the the nominal control u_nom, return a perturbed control tape that is
-    sampled from a Gaussian distribution centered at u_nom.
-    """
-    du = np.random.normal(0, data.sampling_variance, u_nom.shape)
-    return u_nom + du
-
-def rollout(x0: np.array, u_tape: np.array, data: ProblemData) -> np.array:
-    """
-    Given the initial state x0 and the control tape u_tape, return the
-    resulting state trajectory.
-    """
-    x = x0
-    x_traj = [x]
-    for u in u_tape:
-        x = robot_dynamics(x, u, data)
-        x_traj.append(x)
-    return np.array(x_traj)
-
-def compute_cost(x: np.array, u: np.array, data: ProblemData) -> float:
-    """
-    Given the state x and control, compute the running cost.
-    """
-    state_cost = np.linalg.norm(x - data.x_nom)**2
-    control_cost = data.control_cost * np.linalg.norm(u)**2
-
-    obstacle_cost = 0
-    for obstacle in data.obstacles:
-        if obstacle.contains(x):
-            obstacle_cost = data.obstacle_cost
-
-    return state_cost + control_cost + obstacle_cost
-
-def compute_trajectory_cost(x_traj: np.array, u_tape: np.array, data: ProblemData) -> float:
-    """
-    Given the state trajectory x_traj, the nominal state x_nom, and the
-    control tape u_tape, return the total cost.
-    """
-    cost = 0.0
-    for x, u in zip(x_traj, u_tape):
-        cost += compute_cost(x, u, data)
-    return cost
-
-def vanilla_mppi(x0: np.array, u_guess: np.array, data: ProblemData) -> (List[np.array], List[np.array]):
-    """
-    Given the initial state x0 and an initial guess for the control tape,
-    perform MPPI to get a new control tape.
-
-    Returns a list of control tapes and a list of state trajectories, where the
-    last element of each list is the best control tape and state trajectory.
-    """
-    # Sample some trajectories
-    Us = []
-    Xs = []
-    costs = []
-    for _ in range(data.num_samples):
-        u_tape = sample_control_tape(u_guess, data)
-        x_tape = rollout(x0, u_tape, data)
-        Us.append(u_tape)
-        Xs.append(x_tape)
-        costs.append(compute_trajectory_cost(x_tape, u_tape, data))
-
-    # Compute the weights
-    costs = np.array(costs)
-    min_cost = np.min(costs)
-    weights = np.exp(-(costs-min_cost) / data.temperature)
-    weights /= np.sum(weights)
-
-    # Compute the new control tape
-    u_nom = np.zeros(u_guess.shape)
-    for u_tape, weight in zip(Us, weights):
-        u_nom += weight * u_tape
-
-    # Compute the new state trajectory
-    x_nom = rollout(x0, u_nom, data)
-
-    # Append the new control tape and state trajectory
-    Us.append(u_nom)
-    Xs.append(x_nom)
-
-    return Us, Xs
+    return u
 
 def contains_collisions(x_traj: np.array, data: ProblemData) -> bool:
     """
@@ -239,7 +157,7 @@ def simulate(mppi=vanilla_mppi):
         pygame.draw.circle(screen, (0, 255, 0), data.x_nom, 10)  # Target position
 
         # Perform an MPPI step
-        Us, Xs = mppi(x, u_nom, data)
+        Us, Xs = mppi(x, u_nom, robot_dynamics, data)
 
         # Visualize a few of the MPPI samples
         for i in range(min(len(Xs), 20)):
@@ -256,7 +174,8 @@ def simulate(mppi=vanilla_mppi):
         u_nom = Us[-1]
 
         # Update the state
-        x = robot_dynamics(x, u_nom[0], data)
+        xdot = robot_dynamics(x, u_nom[0])
+        x = x + xdot * data.time_step
 
         pygame.display.flip()
         for event in pygame.event.get():

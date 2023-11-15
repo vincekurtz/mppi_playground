@@ -68,3 +68,34 @@ class ProblemData:
 
     # Time step for the dynamics
     time_step: float = 0.01
+
+def sample_control_tape(u_nom: np.array, data: ProblemData) -> np.array:
+    """
+    Given the the nominal control u_nom, return a perturbed control tape that is
+    sampled from a Gaussian distribution centered at u_nom.
+    """
+    du = np.random.normal(0, data.sampling_variance, u_nom.shape)
+    return u_nom + du
+
+def rollout(x0: np.array, 
+            u_tape: np.array, 
+            robot_dynamics: callable, 
+            data: ProblemData) -> np.array:
+    """
+    Given the initial state x0 and the control tape u_tape, return the
+    resulting state trajectory.
+
+    Args:
+        x0: The initial state.
+        u_tape: The control tape.
+        robot_dynamics: A dynamics function xdot = f(x, u)
+        data: Problem data, including parameters, obstacles, target state, etc.
+
+    """
+    x = x0
+    x_traj = [x]
+    for u in u_tape:
+        xdot = robot_dynamics(x, u)
+        x = x + xdot * data.time_step
+        x_traj.append(x)
+    return np.array(x_traj)
