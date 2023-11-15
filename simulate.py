@@ -3,7 +3,7 @@
 import pygame
 import numpy as np
 import time
-from typing import List
+import sys
 
 from base import ProblemData, Obstacle
 
@@ -41,7 +41,8 @@ def simulate(mppi: callable = vanilla_mppi):
                        robot_dynamics=integrator_dynamics)
     
     # Allocate lagrange multipliers (AL method only)
-    data.lagrange_multipliers = np.zeros((len(obstacles), data.horizon))
+    if mppi == augmented_lagrangian_mppi:
+        data.lagrange_multipliers = np.zeros((len(obstacles), data.horizon))
 
     # Initialize the nominal control tape
     u_nom = np.array([[0.0, 0.0] for _ in range(data.horizon)])
@@ -104,6 +105,15 @@ def simulate(mppi: callable = vanilla_mppi):
 
 
 if __name__ == "__main__":
-    #simulate(mppi=augmented_lagrangian_mppi)
-    #simulate(mppi=vanilla_mppi)
-    simulate(mppi=rejection_sample_mppi)
+    if len(sys.argv) == 1:
+        print("Usage: python simulate.py [vanilla|juststop|augmented|rejection]")
+        sys.exit(0)
+    
+    if sys.argv[1] == "vanilla":
+        simulate(mppi=vanilla_mppi)
+    elif sys.argv[1] == "juststop":
+        simulate(mppi=just_stop_mppi)
+    elif sys.argv[1] == "augmented":
+        simulate(mppi=augmented_lagrangian_mppi)
+    elif sys.argv[1] == "rejection":
+        simulate(mppi=rejection_sample_mppi)
