@@ -6,10 +6,11 @@ import time
 from typing import List
 
 TIME_STEP = 0.01
-TEMPERATURE = 1.0
-SAMPLING_VARIANCE = 100.0
+TEMPERATURE = 0.1
+SAMPLING_VARIANCE = 100
 HORIZON = 20
-NUM_SAMPLES = 10
+NUM_SAMPLES = 100
+CONTROL_COST = 0.01
 
 def robot_dynamics(x: np.array, u: np.array) -> np.array:
     """
@@ -44,7 +45,7 @@ def compute_cost(x: np.array, x_nom: np.array, u: np.array) -> float:
     Given the state x, the nominal state x_nom, and the control u, return
     the running cost. 
     """
-    return np.linalg.norm(x - x_nom)**2 + 0.01 * np.linalg.norm(u)**2
+    return np.linalg.norm(x - x_nom)**2 + CONTROL_COST * np.linalg.norm(u)**2
 
 def compute_trajectory_cost(x_traj: np.array, x_nom: np.array, u_tape: np.array) -> float:
     """
@@ -131,8 +132,9 @@ while running:
     # Perform an MPPI step
     Us, Xs = vanilla_mppi(x, x_nom, u_nom)
 
-    # Visualize the MPPI samples
-    for x_traj in Xs:
+    # Visualize a few of the MPPI samples
+    for i in range(20):
+        x_traj = Xs[i]
         for t in range(len(x_traj)-1):
             pygame.draw.line(screen, (255, 0, 0), x_traj[t, :], x_traj[t+1,:], width=1)
 
