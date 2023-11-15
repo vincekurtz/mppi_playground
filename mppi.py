@@ -212,13 +212,13 @@ def rejection_sample_mppi(x0: np.array, u_guess: np.array, data: ProblemData) ->
 
     return Us, Xs
 
-def augmented_lagrangian_mppi(x0: np.array, u_guess: np.array, data: ProblemData) -> (List[np.array], List[np.array]):
+def just_stop_mppi(x0: np.array, u_guess: np.array, data: ProblemData) -> (List[np.array], List[np.array]):
     """
     Given the initial state x0 and an initial guess for the control tape,
     perform MPPI to get a new control tape.
 
-    Do an augmented Lagrangian variation, where the cost penalty is increased
-    with some lagrange multiplier type stuff. 
+    This is the same as vanilla_mppi, but we override the trajectory if it's 
+    going to collide with the wall and just stop instead.
 
     Returns a list of control tapes and a list of state trajectories, where the
     last element of each list is the best control tape and state trajectory.
@@ -247,6 +247,12 @@ def augmented_lagrangian_mppi(x0: np.array, u_guess: np.array, data: ProblemData
 
     # Compute the new state trajectory
     x_nom = rollout(x0, u_nom)
+
+    # Check if that new trajectory contains any collisions. If so, just stop.
+    if contains_collisions(x_nom, data):
+        print("Warning: new trajectory contains collisions. Stopping.")
+        u_nom = np.zeros(u_guess.shape)
+        x_nom = rollout(x0, u_nom)
 
     # Append the new control tape and state trajectory
     Us.append(u_nom)
@@ -305,7 +311,6 @@ def simulate(mppi=vanilla_mppi):
 
         # Update the state
         x = robot_dynamics(x, u_nom[0])
-        print(data.obstacles[0].signed_distance_to(data.x_nom))
 
         pygame.display.flip()
         for event in pygame.event.get():
@@ -326,6 +331,8 @@ def simulate(mppi=vanilla_mppi):
         time.sleep(TIME_STEP)
 
 if __name__ == "__main__":
-    #simulate(vanilla_mppi)
-    #simulate(rejection_sample_mppi)
-    simulate(augmented_lagrangian_mppi)
+    # mppi should be one of 
+    #  - vanilla_mppi
+    #  - just_stop_mppi
+    #  - rejection_sample_mppi
+    simulate(mppi=just_stop_mppi)
