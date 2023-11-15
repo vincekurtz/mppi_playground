@@ -168,7 +168,8 @@ def rejection_sample_mppi(x0: np.array, u_guess: np.array, data: ProblemData) ->
     Us = []
     Xs = []
     costs = []
-    while len(Us) < NUM_SAMPLES:
+    rs_iters = 0
+    while len(Us) < NUM_SAMPLES and rs_iters < 1000:
         u_tape = sample_control_tape(x0, u_guess)
         x_tape = rollout(x0, u_tape)
 
@@ -177,6 +178,7 @@ def rejection_sample_mppi(x0: np.array, u_guess: np.array, data: ProblemData) ->
             Us.append(u_tape)
             Xs.append(x_tape)
             costs.append(compute_trajectory_cost(x_tape, u_tape, data))
+        rs_iters += 1
 
     # Compute the weights
     costs = np.array(costs)
@@ -234,7 +236,7 @@ def simulate():
         Us, Xs = rejection_sample_mppi(x, u_nom, data)
 
         # Visualize a few of the MPPI samples
-        for i in range(20):
+        for i in range(min(len(Xs), 20)):
             x_traj = Xs[i]
             for t in range(len(x_traj)-1):
                 pygame.draw.line(screen, (255, 0, 0), x_traj[t, :], x_traj[t+1,:], width=1)
