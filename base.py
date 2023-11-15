@@ -55,6 +55,9 @@ class ProblemData:
 
     # Obstacles
     obstacles: List[Obstacle]
+    
+    # Robot dynamics xdot = f(x, u)
+    robot_dynamics: callable = None
 
     # Solver parameters
     temperature: float = 1.0
@@ -79,7 +82,6 @@ def sample_control_tape(u_nom: np.array, data: ProblemData) -> np.array:
 
 def rollout(x0: np.array, 
             u_tape: np.array, 
-            robot_dynamics: callable, 
             data: ProblemData) -> np.array:
     """
     Given the initial state x0 and the control tape u_tape, return the
@@ -88,14 +90,13 @@ def rollout(x0: np.array,
     Args:
         x0: The initial state.
         u_tape: The control tape.
-        robot_dynamics: A dynamics function xdot = f(x, u)
         data: Problem data, including parameters, obstacles, target state, etc.
 
     """
     x = x0
     x_traj = [x]
     for u in u_tape:
-        xdot = robot_dynamics(x, u)
+        xdot = data.robot_dynamics(x, u)
         x = x + xdot * data.time_step
         x_traj.append(x)
     return np.array(x_traj)

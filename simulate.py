@@ -8,13 +8,6 @@ from typing import List
 from base import ProblemData, Obstacle
 from vanilla_mppi import vanilla_mppi
 
-def robot_dynamics(x: np.array, u: np.array) -> np.array:
-    """
-    Given the state x and control u, return xdot for a simple
-    robot with integrator dynamics. 
-    """
-    return u
-
 def contains_collisions(x_traj: np.array, data: ProblemData) -> bool:
     """
     Given the state trajectory x_traj, check if it contains any collisions.
@@ -125,6 +118,13 @@ def just_stop_mppi(x0: np.array, u_guess: np.array, data: ProblemData) -> (List[
 
     return Us, Xs
 
+def integrator_dynamics(x: np.array, u: np.array) -> np.array:
+    """
+    Given the state x and control u, return xdot for a simple
+    robot with integrator dynamics. 
+    """
+    return u
+
 def simulate(mppi=vanilla_mppi):
     """
     Run a quick little simulation with pygame. 
@@ -140,7 +140,9 @@ def simulate(mppi=vanilla_mppi):
     obstacles = [
         Obstacle(400, 100, 100, 100),
         Obstacle(200, 300, 300, 50),]
-    data = ProblemData(x_nom=np.array([400, 250]), obstacles=obstacles)
+    data = ProblemData(x_nom=np.array([400, 250]), 
+                       obstacles=obstacles,
+                       robot_dynamics = integrator_dynamics)
 
     # Initialize the nominal control tape
     u_nom = np.array([[0.0, 0.0] for _ in range(data.horizon)])
@@ -157,7 +159,7 @@ def simulate(mppi=vanilla_mppi):
         pygame.draw.circle(screen, (0, 255, 0), data.x_nom, 10)  # Target position
 
         # Perform an MPPI step
-        Us, Xs = mppi(x, u_nom, robot_dynamics, data)
+        Us, Xs = mppi(x, u_nom, data)
 
         # Visualize a few of the MPPI samples
         for i in range(min(len(Xs), 20)):
@@ -174,7 +176,7 @@ def simulate(mppi=vanilla_mppi):
         u_nom = Us[-1]
 
         # Update the state
-        xdot = robot_dynamics(x, u_nom[0])
+        xdot = data.robot_dynamics(x, u_nom[0])
         x = x + xdot * data.time_step
 
         pygame.display.flip()

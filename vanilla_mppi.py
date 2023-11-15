@@ -34,7 +34,6 @@ def compute_trajectory_cost(x_traj: np.array, u_tape: np.array, data: ProblemDat
 
 def vanilla_mppi(x0: np.array, 
                  u_guess: np.array, 
-                 robot_dynamics: callable,
                  data: ProblemData,
     ) -> (List[np.array], List[np.array]):
     """
@@ -44,8 +43,7 @@ def vanilla_mppi(x0: np.array,
     Args:
         x0: The initial state.
         u_guess: The initial guess for the control tape.
-        robot_dynamics: A dynamics function xdot = f(x, u)
-        data: Problem data, including parameters, obstacles, target state, etc.
+        data: Problem data, including parameters, obstacles, target, dynamics, etc.
 
     Return a list of control tapes and a list of state trajectories, where the
     last element of each list is the best control tape and state trajectory.
@@ -56,7 +54,7 @@ def vanilla_mppi(x0: np.array,
     costs = []
     for _ in range(data.num_samples):
         u_tape = sample_control_tape(u_guess, data)
-        x_tape = rollout(x0, u_tape, robot_dynamics, data)
+        x_tape = rollout(x0, u_tape, data)
         Us.append(u_tape)
         Xs.append(x_tape)
         costs.append(compute_trajectory_cost(x_tape, u_tape, data))
@@ -73,7 +71,7 @@ def vanilla_mppi(x0: np.array,
         u_nom += weight * u_tape
 
     # Compute the new state trajectory
-    x_nom = rollout(x0, u_nom, robot_dynamics, data)
+    x_nom = rollout(x0, u_nom, data)
 
     # Append the new control tape and state trajectory
     Us.append(u_nom)
