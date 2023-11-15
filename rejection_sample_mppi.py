@@ -5,9 +5,10 @@
 ##
 
 import numpy as np
-from base import ProblemData, rollout, sample_control_tape
-from vanilla_mppi import compute_trajectory_cost
 from typing import List
+
+from .base import ProblemData, rollout, sample_control_tape
+from .vanilla_mppi import compute_trajectory_cost
 
 
 def contains_collisions(x_traj: np.array, data: ProblemData) -> bool:
