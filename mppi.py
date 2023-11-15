@@ -7,11 +7,14 @@ from typing import List
 from dataclasses import dataclass
 
 # MPPI parameters
-TEMPERATURE = 0.1
+TEMPERATURE = 10
 SAMPLING_VARIANCE = 100
 HORIZON = 20
 NUM_SAMPLES = 100
+
 CONTROL_COST = 0.01
+OBSTACLE_COST = 1e5
+
 TIME_STEP = 0.01
 
 class Obstacle:
@@ -83,7 +86,13 @@ def compute_cost(x: np.array, u: np.array, data: ProblemData) -> float:
     """
     state_cost = np.linalg.norm(x - data.x_nom)**2
     control_cost = CONTROL_COST * np.linalg.norm(u)**2
-    return state_cost + control_cost
+
+    obstacle_cost = 0
+    for obstacle in data.obstacles:
+        if obstacle.contains(x):
+            obstacle_cost = OBSTACLE_COST
+
+    return state_cost + control_cost + obstacle_cost
 
 def compute_trajectory_cost(x_traj: np.array, u_tape: np.array, data: ProblemData) -> float:
     """
@@ -150,17 +159,19 @@ def simulate():
     u_nom = np.array([[0.0, 0.0] for _ in range(HORIZON)])
     
     # Create problem data
-    data = ProblemData(x_nom=np.array([400, 250]), obstacles=[])
+    obstacles = [
+        Obstacle(200, 300, 100, 100),]
+    data = ProblemData(x_nom=np.array([400, 250]), obstacles=obstacles)
 
     # Run until the user asks to quit
     running = True
     while running:
         # Draw stuff
         screen.fill((255, 255, 255))  # White background
-        pygame.draw.circle(screen, (0, 0, 255), x, 10)  # Robot's position
-        pygame.draw.circle(screen, (0, 255, 0), data.x_nom, 10)  # Target position
         for obstacle in data.obstacles:
             obstacle.draw(screen)
+        pygame.draw.circle(screen, (0, 0, 255), x, 10)  # Robot's position
+        pygame.draw.circle(screen, (0, 255, 0), data.x_nom, 10)  # Target position
 
         # Perform an MPPI step
         Us, Xs = vanilla_mppi(x, u_nom, data)
