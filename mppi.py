@@ -160,7 +160,8 @@ def simulate():
     
     # Create problem data
     obstacles = [
-        Obstacle(200, 300, 100, 100),]
+        Obstacle(400, 100, 100, 100),
+        Obstacle(200, 300, 300, 50),]
     data = ProblemData(x_nom=np.array([400, 250]), obstacles=obstacles)
 
     # Run until the user asks to quit
