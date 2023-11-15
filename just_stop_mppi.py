@@ -12,8 +12,8 @@ from rejection_sample_mppi import contains_collisions
 from typing import List
 
 
-def just_stop_mppi(x0: np.array, 
-                   u_guess: np.array, 
+def just_stop_mppi(x0: np.array,
+                   u_guess: np.array,
                    data: ProblemData
                    ) -> (List[np.array], List[np.array]):
     """

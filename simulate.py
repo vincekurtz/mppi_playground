@@ -11,6 +11,7 @@ from vanilla_mppi import vanilla_mppi
 from rejection_sample_mppi import rejection_sample_mppi
 from just_stop_mppi import just_stop_mppi
 
+
 def integrator_dynamics(x: np.array, u: np.array) -> np.array:
     """
     Given the state x and control u, return xdot for a simple

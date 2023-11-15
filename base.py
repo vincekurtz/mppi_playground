@@ -9,10 +9,12 @@ import numpy as np
 from typing import List
 from dataclasses import dataclass
 
+
 class Obstacle:
     """
     A rectangular obstacle.
     """
+
     def __init__(self, x: np.array, y: np.array, width: float, height: float):
         """
         Create an obstacle with the given parameters. 
@@ -44,7 +46,9 @@ class Obstacle:
         Draw the obstacle for pygame.
         """
         buffer = 10   # a little extra space to account for the robot's radius
-        pygame.draw.rect(screen, (0, 0, 0), (self.left+buffer, self.top+buffer, self.width-2*buffer, self.height-2*buffer))
+        pygame.draw.rect(screen, (0, 0, 0), (self.left+buffer,
+                         self.top+buffer, self.width-2*buffer, self.height-2*buffer))
+
 
 @dataclass
 class ProblemData:
@@ -56,7 +60,7 @@ class ProblemData:
 
     # Obstacles
     obstacles: List[Obstacle]
-    
+
     # Robot dynamics xdot = f(x, u)
     robot_dynamics: callable = None
 
@@ -74,6 +78,7 @@ class ProblemData:
     # Time step for the dynamics
     time_step: float = 0.01
 
+
 def sample_control_tape(u_nom: np.array, data: ProblemData) -> np.array:
     """
     Given the the nominal control u_nom, return a perturbed control tape that is
@@ -82,8 +87,9 @@ def sample_control_tape(u_nom: np.array, data: ProblemData) -> np.array:
     du = np.random.normal(0, data.sampling_variance, u_nom.shape)
     return u_nom + du
 
-def rollout(x0: np.array, 
-            u_tape: np.array, 
+
+def rollout(x0: np.array,
+            u_tape: np.array,
             data: ProblemData) -> np.array:
     """
     Given the initial state x0 and the control tape u_tape, return the
