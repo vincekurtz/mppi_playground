@@ -8,7 +8,6 @@ import numpy as np
 from base import ProblemData, rollout, sample_control_tape
 from typing import List
 
-
 def compute_cost(x: np.array, u: np.array, data: ProblemData) -> float:
     """
     Given the state x and control, compute the running cost.
@@ -23,7 +22,6 @@ def compute_cost(x: np.array, u: np.array, data: ProblemData) -> float:
 
     return state_cost + control_cost + obstacle_cost
 
-
 def compute_trajectory_cost(x_traj: np.array, u_tape: np.array, data: ProblemData) -> float:
     """
     Given the state trajectory x_traj, the nominal state x_nom, and the
@@ -34,11 +32,10 @@ def compute_trajectory_cost(x_traj: np.array, u_tape: np.array, data: ProblemDat
         cost += compute_cost(x, u, data)
     return cost
 
-
-def vanilla_mppi(x0: np.array,
-                 u_guess: np.array,
+def vanilla_mppi(x0: np.array, 
+                 u_guess: np.array, 
                  data: ProblemData,
-                 ) -> (List[np.array], List[np.array]):
+    ) -> (List[np.array], List[np.array]):
     """
     Given the initial state x0 and an initial guess for the control tape,
     perform MPPI to get a new control tape.
@@ -81,3 +78,5 @@ def vanilla_mppi(x0: np.array,
     Xs.append(x_nom)
 
     return Us, Xs
+
+
