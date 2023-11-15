@@ -180,6 +180,11 @@ def rejection_sample_mppi(x0: np.array, u_guess: np.array, data: ProblemData) ->
             costs.append(compute_trajectory_cost(x_tape, u_tape, data))
         rs_iters += 1
 
+    if len(Us) == 0:
+        print("Warning: no collision-free samples found. Returning a zero control tape.")
+        u = np.zeros(u_guess.shape)
+        return [u], [rollout(x0, u)]
+
     # Compute the weights
     costs = np.array(costs)
     min_cost = np.min(costs)
