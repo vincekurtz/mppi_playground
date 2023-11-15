@@ -17,8 +17,8 @@ def compute_cost(x: np.array, u: np.array, data: ProblemData) -> float:
 
     obstacle_cost = 0
     for obstacle in data.obstacles:
-        if obstacle.contains(x):
-            obstacle_cost = data.obstacle_cost
+        phi = obstacle.signed_distance(x)
+        obstacle_cost += data.obstacle_cost / (1 + np.exp(phi / data.obstacle_smoothing_factor))
 
     return state_cost + control_cost + obstacle_cost
 

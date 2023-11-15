@@ -24,7 +24,7 @@ class Obstacle:
         self.width = width
         self.height = height
 
-    def signed_distance_to(self, pos: np.array) -> float:
+    def signed_distance(self, pos: np.array) -> float:
         """
         Compute the signed distance from the given point to the obstacle.
         This is negative if the point is inside the obstacle.
@@ -69,6 +69,7 @@ class ProblemData:
     # Cost function parameters
     control_cost: float = 0.01
     obstacle_cost: float = 1e6
+    obstacle_smoothing_factor: float = 1.0
 
     # Time step for the dynamics
     time_step: float = 0.01

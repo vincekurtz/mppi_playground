@@ -96,4 +96,4 @@ def simulate(mppi: callable = vanilla_mppi):
 
 
 if __name__ == "__main__":
-    simulate(mppi=just_stop_mppi)
+    simulate(mppi=vanilla_mppi)
