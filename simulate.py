@@ -7,68 +7,8 @@ from typing import List
 
 from base import ProblemData, Obstacle
 from vanilla_mppi import vanilla_mppi
+from rejection_sample_mppi import rejection_sample_mppi
 
-def contains_collisions(x_traj: np.array, data: ProblemData) -> bool:
-    """
-    Given the state trajectory x_traj, check if it contains any collisions.
-    """
-    for x in x_traj:
-        for obstacle in data.obstacles:
-            if obstacle.contains(x):
-                return True
-    return False
-
-def rejection_sample_mppi(x0: np.array, u_guess: np.array, data: ProblemData) -> (List[np.array], List[np.array]):
-    """
-    Given the initial state x0 and an initial guess for the control tape,
-    perform MPPI to get a new control tape.
-
-    Do a rejection sampling variation, where we only keep samples that are
-    collision-free.
-
-    Returns a list of control tapes and a list of state trajectories, where the
-    last element of each list is the best control tape and state trajectory.
-    """
-    # Sample some trajectories
-    Us = []
-    Xs = []
-    costs = []
-    rs_iters = 0
-    while len(Us) < NUM_SAMPLES and rs_iters < 500:
-        u_tape = sample_control_tape(x0, u_guess)
-        x_tape = rollout(x0, u_tape)
-
-        # Check if the trajectory is collision-free. If so, keep it.
-        if not contains_collisions(x_tape, data):
-            Us.append(u_tape)
-            Xs.append(x_tape)
-            costs.append(compute_trajectory_cost(x_tape, u_tape, data))
-        rs_iters += 1
-
-    if len(Us) == 0:
-        print("Warning: no collision-free samples found. Returning a zero control tape.")
-        u = np.zeros(u_guess.shape)
-        return [u], [rollout(x0, u)]
-
-    # Compute the weights
-    costs = np.array(costs)
-    min_cost = np.min(costs)
-    weights = np.exp(-(costs-min_cost) / TEMPERATURE)
-    weights /= np.sum(weights)
-
-    # Compute the new control tape
-    u_nom = np.zeros(u_guess.shape)
-    for u_tape, weight in zip(Us, weights):
-        u_nom += weight * u_tape
-
-    # Compute the new state trajectory
-    x_nom = rollout(x0, u_nom)
-
-    # Append the new control tape and state trajectory
-    Us.append(u_nom)
-    Xs.append(x_nom)
-
-    return Us, Xs
 
 def just_stop_mppi(x0: np.array, u_guess: np.array, data: ProblemData) -> (List[np.array], List[np.array]):
     """
@@ -118,6 +58,7 @@ def just_stop_mppi(x0: np.array, u_guess: np.array, data: ProblemData) -> (List[
 
     return Us, Xs
 
+
 def integrator_dynamics(x: np.array, u: np.array) -> np.array:
     """
     Given the state x and control u, return xdot for a simple
@@ -125,9 +66,10 @@ def integrator_dynamics(x: np.array, u: np.array) -> np.array:
     """
     return u
 
-def simulate(mppi=vanilla_mppi):
+
+def simulate(mppi: callable = vanilla_mppi):
     """
-    Run a quick little simulation with pygame. 
+    Run a quick little simulation with pygame, using the given MPPI strategy.
     """
     # Set up pygame
     pygame.init()
@@ -135,14 +77,14 @@ def simulate(mppi=vanilla_mppi):
 
     # Set the initial state
     x = np.array([200, 200])
-    
+
     # Create problem data
     obstacles = [
         Obstacle(400, 100, 100, 100),
         Obstacle(200, 300, 300, 50),]
-    data = ProblemData(x_nom=np.array([400, 250]), 
+    data = ProblemData(x_nom=np.array([400, 250]),
                        obstacles=obstacles,
-                       robot_dynamics = integrator_dynamics)
+                       robot_dynamics=integrator_dynamics)
 
     # Initialize the nominal control tape
     u_nom = np.array([[0.0, 0.0] for _ in range(data.horizon)])
@@ -156,7 +98,8 @@ def simulate(mppi=vanilla_mppi):
         for obstacle in data.obstacles:
             obstacle.draw(screen)
         pygame.draw.circle(screen, (0, 0, 255), x, 10)  # Robot's position
-        pygame.draw.circle(screen, (0, 255, 0), data.x_nom, 10)  # Target position
+        pygame.draw.circle(screen, (0, 255, 0), data.x_nom,
+                           10)  # Target position
 
         # Perform an MPPI step
         Us, Xs = mppi(x, u_nom, data)
@@ -165,12 +108,14 @@ def simulate(mppi=vanilla_mppi):
         for i in range(min(len(Xs), 20)):
             x_traj = Xs[i]
             for t in range(len(x_traj)-1):
-                pygame.draw.line(screen, (255, 0, 0), x_traj[t, :], x_traj[t+1,:], width=1)
+                pygame.draw.line(screen, (255, 0, 0),
+                                 x_traj[t, :], x_traj[t+1, :], width=1)
 
         # Visualize the best trajectory with a thicker line
         x_star = Xs[-1]
         for t in range(len(x_star)-1):
-            pygame.draw.line(screen, (0, 0, 255), x_star[t, :], x_star[t+1,:], width=3)
+            pygame.draw.line(screen, (0, 0, 255),
+                             x_star[t, :], x_star[t+1, :], width=3)
 
         # Update the nominal control tape
         u_nom = Us[-1]
@@ -197,9 +142,6 @@ def simulate(mppi=vanilla_mppi):
         # run in roughly real time
         time.sleep(data.time_step)
 
+
 if __name__ == "__main__":
-    # mppi should be one of 
-    #  - vanilla_mppi
-    #  - just_stop_mppi
-    #  - rejection_sample_mppi
-    simulate(mppi=vanilla_mppi)
+    simulate(mppi=rejection_sample_mppi)
