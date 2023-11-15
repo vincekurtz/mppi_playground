@@ -6,15 +6,13 @@ import time
 from typing import List
 from dataclasses import dataclass
 
-# MPPI parameters
+# Solver parameters
 TEMPERATURE = 10
 SAMPLING_VARIANCE = 100
-HORIZON = 20
 NUM_SAMPLES = 100
-
+HORIZON = 20
 CONTROL_COST = 0.01
-OBSTACLE_COST = 1e5
-
+OBSTACLE_COST = 1e6
 TIME_STEP = 0.01
 
 class Obstacle:
@@ -31,6 +29,15 @@ class Obstacle:
         self.bottom = y + height / 2
         self.width = width
         self.height = height
+
+    def signed_distance_to(self, pos: np.array) -> float:
+        """
+        Compute the signed distance from the given point to the obstacle.
+        This is negative if the point is inside the obstacle.
+        """
+        dx = max(self.left - pos[0], pos[0] - self.right)
+        dy = max(self.top - pos[1], pos[1] - self.bottom)
+        return max(dx, dy)
 
     def contains(self, pos: np.array) -> bool:
         """
@@ -205,7 +212,49 @@ def rejection_sample_mppi(x0: np.array, u_guess: np.array, data: ProblemData) ->
 
     return Us, Xs
 
-def simulate():
+def augmented_lagrangian_mppi(x0: np.array, u_guess: np.array, data: ProblemData) -> (List[np.array], List[np.array]):
+    """
+    Given the initial state x0 and an initial guess for the control tape,
+    perform MPPI to get a new control tape.
+
+    Do an augmented Lagrangian variation, where the cost penalty is increased
+    with some lagrange multiplier type stuff. 
+
+    Returns a list of control tapes and a list of state trajectories, where the
+    last element of each list is the best control tape and state trajectory.
+    """
+    # Sample some trajectories
+    Us = []
+    Xs = []
+    costs = []
+    for _ in range(NUM_SAMPLES):
+        u_tape = sample_control_tape(x0, u_guess)
+        x_tape = rollout(x0, u_tape)
+        Us.append(u_tape)
+        Xs.append(x_tape)
+        costs.append(compute_trajectory_cost(x_tape, u_tape, data))
+
+    # Compute the weights
+    costs = np.array(costs)
+    min_cost = np.min(costs)
+    weights = np.exp(-(costs-min_cost) / TEMPERATURE)
+    weights /= np.sum(weights)
+
+    # Compute the new control tape
+    u_nom = np.zeros(u_guess.shape)
+    for u_tape, weight in zip(Us, weights):
+        u_nom += weight * u_tape
+
+    # Compute the new state trajectory
+    x_nom = rollout(x0, u_nom)
+
+    # Append the new control tape and state trajectory
+    Us.append(u_nom)
+    Xs.append(x_nom)
+
+    return Us, Xs
+
+def simulate(mppi=vanilla_mppi):
     """
     Run a quick little simulation with pygame. 
     """
@@ -238,8 +287,7 @@ def simulate():
         pygame.draw.circle(screen, (0, 255, 0), data.x_nom, 10)  # Target position
 
         # Perform an MPPI step
-        #Us, Xs = vanilla_mppi(x, u_nom, data)
-        Us, Xs = rejection_sample_mppi(x, u_nom, data)
+        Us, Xs = mppi(x, u_nom, data)
 
         # Visualize a few of the MPPI samples
         for i in range(min(len(Xs), 20)):
@@ -257,6 +305,7 @@ def simulate():
 
         # Update the state
         x = robot_dynamics(x, u_nom[0])
+        print(data.obstacles[0].signed_distance_to(data.x_nom))
 
         pygame.display.flip()
         for event in pygame.event.get():
@@ -277,4 +326,6 @@ def simulate():
         time.sleep(TIME_STEP)
 
 if __name__ == "__main__":
-    simulate()
+    #simulate(vanilla_mppi)
+    #simulate(rejection_sample_mppi)
+    simulate(augmented_lagrangian_mppi)
