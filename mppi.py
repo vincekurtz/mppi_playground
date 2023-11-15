@@ -6,15 +6,6 @@ import time
 from typing import List
 from dataclasses import dataclass
 
-# Solver parameters
-TEMPERATURE = 10
-SAMPLING_VARIANCE = 100
-NUM_SAMPLES = 100
-HORIZON = 20
-CONTROL_COST = 0.01
-OBSTACLE_COST = 1e6
-TIME_STEP = 0.01
-
 class Obstacle:
     """
     A rectangular obstacle.
@@ -54,28 +45,43 @@ class Obstacle:
 @dataclass
 class ProblemData:
     """
-    A little struct for storing the target state and any obstacles. 
+    A little struct for storing problem data and solver parameters.
     """
+    # Target state
     x_nom: np.array
+
+    # Obstacles
     obstacles: List[Obstacle]
 
-def robot_dynamics(x: np.array, u: np.array) -> np.array:
+    # Solver parameters
+    temperature: float = 1.0
+    sampling_variance: float = 100
+    num_samples: int = 100
+    horizon: int = 20
+
+    # Cost function parameters
+    control_cost: float = 0.01
+    obstacle_cost: float = 1e6
+
+    # Time step for the dynamics
+    time_step: float = 0.01
+
+def robot_dynamics(x: np.array, u: np.array, data: ProblemData) -> np.array:
     """
     Given the state x and control u, return the next state for a simple
     robot with integrator dynamics. 
     """
-    return x + u * TIME_STEP
+    return x + u * data.time_step
 
-def sample_control_tape(x0: np.array, u_nom: np.array) -> np.array:
+def sample_control_tape(u_nom: np.array, data: ProblemData) -> np.array:
     """
-    Given the initial state x0 and the nominal control u_nom, return a
-    perturbed control tape that is sampled from a Gaussian distribution
-    centered at u_nom.
+    Given the the nominal control u_nom, return a perturbed control tape that is
+    sampled from a Gaussian distribution centered at u_nom.
     """
-    du = np.random.normal(0, SAMPLING_VARIANCE, u_nom.shape)
+    du = np.random.normal(0, data.sampling_variance, u_nom.shape)
     return u_nom + du
 
-def rollout(x0: np.array, u_tape: np.array) -> np.array:
+def rollout(x0: np.array, u_tape: np.array, data: ProblemData) -> np.array:
     """
     Given the initial state x0 and the control tape u_tape, return the
     resulting state trajectory.
@@ -83,7 +89,7 @@ def rollout(x0: np.array, u_tape: np.array) -> np.array:
     x = x0
     x_traj = [x]
     for u in u_tape:
-        x = robot_dynamics(x, u)
+        x = robot_dynamics(x, u, data)
         x_traj.append(x)
     return np.array(x_traj)
 
@@ -92,12 +98,12 @@ def compute_cost(x: np.array, u: np.array, data: ProblemData) -> float:
     Given the state x and control, compute the running cost.
     """
     state_cost = np.linalg.norm(x - data.x_nom)**2
-    control_cost = CONTROL_COST * np.linalg.norm(u)**2
+    control_cost = data.control_cost * np.linalg.norm(u)**2
 
     obstacle_cost = 0
     for obstacle in data.obstacles:
         if obstacle.contains(x):
-            obstacle_cost = OBSTACLE_COST
+            obstacle_cost = data.obstacle_cost
 
     return state_cost + control_cost + obstacle_cost
 
@@ -123,9 +129,9 @@ def vanilla_mppi(x0: np.array, u_guess: np.array, data: ProblemData) -> (List[np
     Us = []
     Xs = []
     costs = []
-    for _ in range(NUM_SAMPLES):
-        u_tape = sample_control_tape(x0, u_guess)
-        x_tape = rollout(x0, u_tape)
+    for _ in range(data.num_samples):
+        u_tape = sample_control_tape(u_guess, data)
+        x_tape = rollout(x0, u_tape, data)
         Us.append(u_tape)
         Xs.append(x_tape)
         costs.append(compute_trajectory_cost(x_tape, u_tape, data))
@@ -133,7 +139,7 @@ def vanilla_mppi(x0: np.array, u_guess: np.array, data: ProblemData) -> (List[np
     # Compute the weights
     costs = np.array(costs)
     min_cost = np.min(costs)
-    weights = np.exp(-(costs-min_cost) / TEMPERATURE)
+    weights = np.exp(-(costs-min_cost) / data.temperature)
     weights /= np.sum(weights)
 
     # Compute the new control tape
@@ -142,7 +148,7 @@ def vanilla_mppi(x0: np.array, u_guess: np.array, data: ProblemData) -> (List[np
         u_nom += weight * u_tape
 
     # Compute the new state trajectory
-    x_nom = rollout(x0, u_nom)
+    x_nom = rollout(x0, u_nom, data)
 
     # Append the new control tape and state trajectory
     Us.append(u_nom)
@@ -228,8 +234,8 @@ def just_stop_mppi(x0: np.array, u_guess: np.array, data: ProblemData) -> (List[
     Xs = []
     costs = []
     for _ in range(NUM_SAMPLES):
-        u_tape = sample_control_tape(x0, u_guess)
-        x_tape = rollout(x0, u_tape)
+        u_tape = sample_control_tape(u_guess, data)
+        x_tape = rollout(x0, u_tape, data)
         Us.append(u_tape)
         Xs.append(x_tape)
         costs.append(compute_trajectory_cost(x_tape, u_tape, data))
@@ -237,7 +243,7 @@ def just_stop_mppi(x0: np.array, u_guess: np.array, data: ProblemData) -> (List[
     # Compute the weights
     costs = np.array(costs)
     min_cost = np.min(costs)
-    weights = np.exp(-(costs-min_cost) / TEMPERATURE)
+    weights = np.exp(-(costs-min_cost) / data.temperature)
     weights /= np.sum(weights)
 
     # Compute the new control tape
@@ -270,16 +276,15 @@ def simulate(mppi=vanilla_mppi):
 
     # Set the initial state
     x = np.array([200, 200])
-    u = np.array([10, 10])
-
-    # Initialize the nominal control tape
-    u_nom = np.array([[0.0, 0.0] for _ in range(HORIZON)])
     
     # Create problem data
     obstacles = [
         Obstacle(400, 100, 100, 100),
         Obstacle(200, 300, 300, 50),]
     data = ProblemData(x_nom=np.array([400, 250]), obstacles=obstacles)
+
+    # Initialize the nominal control tape
+    u_nom = np.array([[0.0, 0.0] for _ in range(data.horizon)])
 
     # Run until the user asks to quit
     running = True
@@ -310,7 +315,7 @@ def simulate(mppi=vanilla_mppi):
         u_nom = Us[-1]
 
         # Update the state
-        x = robot_dynamics(x, u_nom[0])
+        x = robot_dynamics(x, u_nom[0], data)
 
         pygame.display.flip()
         for event in pygame.event.get():
@@ -328,11 +333,11 @@ def simulate(mppi=vanilla_mppi):
                 running = False
 
         # run in roughly real time
-        time.sleep(TIME_STEP)
+        time.sleep(data.time_step)
 
 if __name__ == "__main__":
     # mppi should be one of 
     #  - vanilla_mppi
     #  - just_stop_mppi
     #  - rejection_sample_mppi
-    simulate(mppi=just_stop_mppi)
+    simulate(mppi=vanilla_mppi)
