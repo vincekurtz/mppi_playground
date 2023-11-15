@@ -43,7 +43,8 @@ class Obstacle:
         """
         Draw the obstacle for pygame.
         """
-        pygame.draw.rect(screen, (0, 0, 0), (self.left, self.top, self.width, self.height))
+        buffer = 10   # a little extra space to account for the robot's radius
+        pygame.draw.rect(screen, (0, 0, 0), (self.left+buffer, self.top+buffer, self.width-2*buffer, self.height-2*buffer))
 
 @dataclass
 class ProblemData:
