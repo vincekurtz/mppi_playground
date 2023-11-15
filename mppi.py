@@ -169,7 +169,7 @@ def rejection_sample_mppi(x0: np.array, u_guess: np.array, data: ProblemData) ->
     Xs = []
     costs = []
     rs_iters = 0
-    while len(Us) < NUM_SAMPLES and rs_iters < 1000:
+    while len(Us) < NUM_SAMPLES and rs_iters < 500:
         u_tape = sample_control_tape(x0, u_guess)
         x_tape = rollout(x0, u_tape)
 
@@ -228,6 +228,7 @@ def simulate():
 
     # Run until the user asks to quit
     running = True
+    dragging_target = False
     while running:
         # Draw stuff
         screen.fill((255, 255, 255))  # White background
@@ -261,6 +262,11 @@ def simulate():
         for event in pygame.event.get():
             # Update the target position if the user clicks
             if event.type == pygame.MOUSEBUTTONDOWN:
+                dragging_target = True
+                data.x_nom = np.array(pygame.mouse.get_pos())
+            if event.type == pygame.MOUSEBUTTONUP:
+                dragging_target = False
+            if event.type == pygame.MOUSEMOTION and dragging_target:
                 data.x_nom = np.array(pygame.mouse.get_pos())
 
             # Close the window if the user presses the close button
