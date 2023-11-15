@@ -143,6 +143,61 @@ def vanilla_mppi(x0: np.array, u_guess: np.array, data: ProblemData) -> (List[np
 
     return Us, Xs
 
+def contains_collisions(x_traj: np.array, data: ProblemData) -> bool:
+    """
+    Given the state trajectory x_traj, check if it contains any collisions.
+    """
+    for x in x_traj:
+        for obstacle in data.obstacles:
+            if obstacle.contains(x):
+                return True
+    return False
+
+def rejection_sample_mppi(x0: np.array, u_guess: np.array, data: ProblemData) -> (List[np.array], List[np.array]):
+    """
+    Given the initial state x0 and an initial guess for the control tape,
+    perform MPPI to get a new control tape.
+
+    Do a rejection sampling variation, where we only keep samples that are
+    collision-free.
+
+    Returns a list of control tapes and a list of state trajectories, where the
+    last element of each list is the best control tape and state trajectory.
+    """
+    # Sample some trajectories
+    Us = []
+    Xs = []
+    costs = []
+    while len(Us) < NUM_SAMPLES:
+        u_tape = sample_control_tape(x0, u_guess)
+        x_tape = rollout(x0, u_tape)
+
+        # Check if the trajectory is collision-free. If so, keep it.
+        if not contains_collisions(x_tape, data):
+            Us.append(u_tape)
+            Xs.append(x_tape)
+            costs.append(compute_trajectory_cost(x_tape, u_tape, data))
+
+    # Compute the weights
+    costs = np.array(costs)
+    min_cost = np.min(costs)
+    weights = np.exp(-(costs-min_cost) / TEMPERATURE)
+    weights /= np.sum(weights)
+
+    # Compute the new control tape
+    u_nom = np.zeros(u_guess.shape)
+    for u_tape, weight in zip(Us, weights):
+        u_nom += weight * u_tape
+
+    # Compute the new state trajectory
+    x_nom = rollout(x0, u_nom)
+
+    # Append the new control tape and state trajectory
+    Us.append(u_nom)
+    Xs.append(x_nom)
+
+    return Us, Xs
+
 def simulate():
     """
     Run a quick little simulation with pygame. 
@@ -175,7 +230,8 @@ def simulate():
         pygame.draw.circle(screen, (0, 255, 0), data.x_nom, 10)  # Target position
 
         # Perform an MPPI step
-        Us, Xs = vanilla_mppi(x, u_nom, data)
+        #Us, Xs = vanilla_mppi(x, u_nom, data)
+        Us, Xs = rejection_sample_mppi(x, u_nom, data)
 
         # Visualize a few of the MPPI samples
         for i in range(20):
