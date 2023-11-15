@@ -73,7 +73,7 @@ class ProblemData:
     # Cost function parameters
     control_cost: float = 0.01
     obstacle_cost: float = 1e2
-    obstacle_smoothing_factor: float = 1.0
+    obstacle_smoothing_factor: float = 10
 
     # Time step for the dynamics
     time_step: float = 0.01

@@ -104,4 +104,6 @@ def simulate(mppi: callable = vanilla_mppi):
 
 
 if __name__ == "__main__":
-    simulate(mppi=augmented_lagrangian_mppi)
+    #simulate(mppi=augmented_lagrangian_mppi)
+    #simulate(mppi=vanilla_mppi)
+    simulate(mppi=rejection_sample_mppi)

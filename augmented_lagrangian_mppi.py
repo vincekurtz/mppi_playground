@@ -32,15 +32,17 @@ def compute_cost(x: np.array, u: np.array, t: int, data: ProblemData) -> (float,
     c = np.zeros(len(data.obstacles))
     for i in range(len(data.obstacles)):
         obstacle = data.obstacles[i]
-
         phi = obstacle.signed_distance(x)
         c[i] = -phi
 
-        # Get the Lagrange multiplier estimate for this obstacle at this step
-        lmbda = data.lagrange_multipliers[i, t]
+        # Penalty cost is quadratic in the constraint violation
+        penalty_cost = data.obstacle_cost * smoothmin(0, phi, data.obstacle_smoothing_factor)**2
 
-        # Add augmented Lagrangian term to the cost
-        obstacle_cost += lmbda * c[i]
+        # Lagrange multiplier term grows and shrinks with the constraint violation
+        lmbda = data.lagrange_multipliers[i, t]
+        lagrange_cost = lmbda * c[i]
+
+        obstacle_cost += penalty_cost + lagrange_cost
     
     running_cost = state_cost + control_cost + obstacle_cost
 
@@ -122,15 +124,14 @@ def augmented_lagrangian_mppi(x0: np.array,
         lmbda = np.zeros(data.lagrange_multipliers.shape)
         for t in range(data.horizon):
             for j in range(len(data.obstacles)):
-                if c[j, t] > 0:  # If the constraint is violated
-                  lmbda[j, t] = data.lagrange_multipliers[j,t] + 0.5 * c[j, t]
+                mu = data.obstacle_cost
+                if c[j, t] > data.lagrange_multipliers[j, t]/mu:
+                    lmbda[j, t] = data.lagrange_multipliers[j,t] + mu * c[j, t]
         lagrange_multipliers.append(lmbda)
 
     data.lagrange_multipliers *= 0.0
     for lmbda, weight in zip(lagrange_multipliers, weights):
         data.lagrange_multipliers += weight * lmbda
-
-    print(np.linalg.norm(data.lagrange_multipliers))
 
     # Compute the new state trajectory
     x_nom = rollout(x0, u_nom, data)
