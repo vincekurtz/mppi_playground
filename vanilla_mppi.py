@@ -8,6 +8,14 @@ import numpy as np
 from base import ProblemData, rollout, sample_control_tape
 from typing import List
 
+def smoothmin(a: float, b: float, smoothing_factor: float) -> float:
+    """
+    Given two values a and b, return a smooth approximation of min(a, b).
+    """
+    exp_a = np.exp(-a / smoothing_factor)
+    exp_b = np.exp(-b / smoothing_factor)
+    return -smoothing_factor * np.log(exp_a + exp_b)
+
 
 def compute_cost(x: np.array, u: np.array, data: ProblemData) -> float:
     """
@@ -19,8 +27,8 @@ def compute_cost(x: np.array, u: np.array, data: ProblemData) -> float:
     obstacle_cost = 0
     for obstacle in data.obstacles:
         phi = obstacle.signed_distance(x)
-        obstacle_cost += data.obstacle_cost / \
-            (1 + np.exp(phi / data.obstacle_smoothing_factor))
+        c = -smoothmin(0, phi, data.obstacle_smoothing_factor)
+        obstacle_cost += data.obstacle_cost * c**2
 
     return state_cost + control_cost + obstacle_cost
 
