@@ -10,6 +10,7 @@ from base import ProblemData, Obstacle
 from vanilla_mppi import vanilla_mppi
 from rejection_sample_mppi import rejection_sample_mppi
 from just_stop_mppi import just_stop_mppi
+from augmented_lagrangian_mppi import augmented_lagrangian_mppi
 
 
 def integrator_dynamics(x: np.array, u: np.array) -> np.array:
@@ -38,6 +39,9 @@ def simulate(mppi: callable = vanilla_mppi):
     data = ProblemData(x_nom=np.array([400, 250]),
                        obstacles=obstacles,
                        robot_dynamics=integrator_dynamics)
+    
+    # Allocate lagrange multipliers (AL method only)
+    data.lagrange_multipliers = np.zeros((len(obstacles), data.horizon))
 
     # Initialize the nominal control tape
     u_nom = np.array([[0.0, 0.0] for _ in range(data.horizon)])
@@ -46,13 +50,16 @@ def simulate(mppi: callable = vanilla_mppi):
     running = True
     dragging_target = False
     while running:
-        # Draw stuff
-        screen.fill((255, 255, 255))  # White background
+        # Fill the background
+        screen.fill((255, 255, 255))
+
+        # Draw the obstacles
         for obstacle in data.obstacles:
             obstacle.draw(screen)
-        pygame.draw.circle(screen, (0, 0, 255), x, 10)  # Robot's position
-        pygame.draw.circle(screen, (0, 255, 0), data.x_nom,
-                           10)  # Target position
+
+        # Draw the robot and the target
+        pygame.draw.circle(screen, (0, 0, 255), x, 10)
+        pygame.draw.circle(screen, (0, 255, 0), data.x_nom, 10)
 
         # Perform an MPPI step
         Us, Xs = mppi(x, u_nom, data)
@@ -97,4 +104,4 @@ def simulate(mppi: callable = vanilla_mppi):
 
 
 if __name__ == "__main__":
-    simulate(mppi=vanilla_mppi)
+    simulate(mppi=augmented_lagrangian_mppi)

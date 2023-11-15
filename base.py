@@ -72,11 +72,15 @@ class ProblemData:
 
     # Cost function parameters
     control_cost: float = 0.01
-    obstacle_cost: float = 1e6
+    obstacle_cost: float = 1e2
     obstacle_smoothing_factor: float = 1.0
 
     # Time step for the dynamics
     time_step: float = 0.01
+
+    # Store the lagrange multiplier estimates for Augmented Lagrangian MPPI.
+    # This is a scalar for each obstacle at each time step
+    lagrange_multipliers: np.array = None
 
 
 def sample_control_tape(u_nom: np.array, data: ProblemData) -> np.array:
