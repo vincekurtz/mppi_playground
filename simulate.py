@@ -10,6 +10,7 @@ from vanilla_mppi import vanilla_mppi
 from rejection_sample_mppi import rejection_sample_mppi
 from just_stop_mppi import just_stop_mppi
 from augmented_lagrangian_mppi import augmented_lagrangian_mppi
+from log_barrier_mppi import log_barrier_mppi
 
 
 def integrator_dynamics(x: np.array, u: np.array) -> np.array:
@@ -105,7 +106,7 @@ def simulate(mppi: callable = vanilla_mppi):
 
 if __name__ == "__main__":
     if len(sys.argv) == 1:
-        print("Usage: python simulate.py [vanilla|juststop|augmented|rejection]")
+        print("Usage: python simulate.py [vanilla|juststop|augmented|rejection|barrier]")
         sys.exit(0)
     
     if sys.argv[1] == "vanilla":
@@ -116,3 +117,7 @@ if __name__ == "__main__":
         simulate(mppi=augmented_lagrangian_mppi)
     elif sys.argv[1] == "rejection":
         simulate(mppi=rejection_sample_mppi)
+    elif sys.argv[1] == "barrier":
+        simulate(mppi=log_barrier_mppi)
+    else:
+        print(f"Unknown MPPI method: {sys.argv[1]}")
