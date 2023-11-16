@@ -45,7 +45,7 @@ def simulate(mppi: callable = vanilla_mppi):
     data = ProblemData(x_nom=np.array([400, 250, 0]),
                        obstacles=obstacles,
                        robot_dynamics=unicycle_dynamics)
-    data.sampling_variance = 10
+    data.sampling_variance = np.array([50, 5])
     data.state_cost = np.array([1, 1, 0.0])
     data.control_cost = np.array([0.01, 1.0])
 

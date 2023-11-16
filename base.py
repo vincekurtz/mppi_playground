@@ -66,7 +66,7 @@ class ProblemData:
 
     # Solver parameters
     temperature: float = 1.0
-    sampling_variance: float = 100
+    sampling_variance: np.array = np.array([100, 100])
     num_samples: int = 100
     horizon: int = 20
 
@@ -85,8 +85,10 @@ def sample_control_tape(u_nom: np.array, data: ProblemData) -> np.array:
     Given the the nominal control u_nom, return a perturbed control tape that is
     sampled from a Gaussian distribution centered at u_nom.
     """
-    du = np.random.normal(0, data.sampling_variance, u_nom.shape)
-    return u_nom + du
+    u = np.zeros(u_nom.shape)
+    for t in range(data.horizon):
+        u[t,:] = np.random.normal(u_nom[t,:], data.sampling_variance)
+    return u
 
 
 def rollout(x0: np.array,
