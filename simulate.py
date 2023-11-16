@@ -5,12 +5,11 @@ import numpy as np
 import time
 import sys
 
-from .base import ProblemData, Obstacle
-
-from .vanilla_mppi import vanilla_mppi
-from .rejection_sample_mppi import rejection_sample_mppi
-from .just_stop_mppi import just_stop_mppi
-from .augmented_lagrangian_mppi import augmented_lagrangian_mppi
+from base import ProblemData, Obstacle
+from vanilla_mppi import vanilla_mppi
+from rejection_sample_mppi import rejection_sample_mppi
+from just_stop_mppi import just_stop_mppi
+from augmented_lagrangian_mppi import augmented_lagrangian_mppi
 
 
 def integrator_dynamics(x: np.array, u: np.array) -> np.array:

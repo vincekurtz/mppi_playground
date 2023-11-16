@@ -7,7 +7,7 @@
 import numpy as np
 from typing import List
 
-from .base import ProblemData, rollout, sample_control_tape
+from base import ProblemData, rollout, sample_control_tape
 
 def smoothmin(a: float, b: float, smoothing_factor: float) -> float:
     """

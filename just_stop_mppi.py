@@ -8,9 +8,9 @@
 import numpy as np
 from typing import List
 
-from .base import ProblemData, rollout, sample_control_tape
-from .vanilla_mppi import compute_trajectory_cost
-from .rejection_sample_mppi import contains_collisions
+from base import ProblemData, rollout, sample_control_tape
+from vanilla_mppi import compute_trajectory_cost
+from rejection_sample_mppi import contains_collisions
 
 
 def just_stop_mppi(x0: np.array,

@@ -7,8 +7,8 @@
 
 import numpy as np
 from typing import List
-from .base import ProblemData, rollout, sample_control_tape
-from .vanilla_mppi import smoothmin
+from base import ProblemData, rollout, sample_control_tape
+from vanilla_mppi import smoothmin
 
 
 def compute_cost(x: np.array, u: np.array, t: int, data: ProblemData) -> (float, np.array):
