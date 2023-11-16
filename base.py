@@ -78,10 +78,6 @@ class ProblemData:
     # Time step for the dynamics
     time_step: float = 0.01
 
-    # Store the lagrange multiplier estimates for Augmented Lagrangian MPPI.
-    # This is a scalar for each obstacle at each time step
-    lagrange_multipliers: np.array = None
-
 
 def sample_control_tape(u_nom: np.array, data: ProblemData) -> np.array:
     """

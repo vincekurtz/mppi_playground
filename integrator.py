@@ -9,7 +9,6 @@ from base import ProblemData, Obstacle
 from vanilla_mppi import vanilla_mppi
 from rejection_sample_mppi import rejection_sample_mppi
 from just_stop_mppi import just_stop_mppi
-from augmented_lagrangian_mppi import augmented_lagrangian_mppi
 from log_barrier_mppi import log_barrier_mppi
 
 
@@ -40,10 +39,6 @@ def simulate(mppi: callable = vanilla_mppi):
                        obstacles=obstacles,
                        robot_dynamics=integrator_dynamics)
     
-    # Allocate lagrange multipliers (AL method only)
-    if mppi == augmented_lagrangian_mppi:
-        data.lagrange_multipliers = np.zeros((len(obstacles), data.horizon))
-
     # Initialize the nominal control tape
     u_nom = np.array([[0.0, 0.0] for _ in range(data.horizon)])
 
@@ -106,15 +101,13 @@ def simulate(mppi: callable = vanilla_mppi):
 
 if __name__ == "__main__":
     if len(sys.argv) == 1:
-        print("Usage: python simulate.py [vanilla|juststop|augmented|rejection|barrier]")
+        print("Usage: python simulate.py [vanilla|juststop|rejection|barrier]")
         sys.exit(0)
     
     if sys.argv[1] == "vanilla":
         simulate(mppi=vanilla_mppi)
     elif sys.argv[1] == "juststop":
         simulate(mppi=just_stop_mppi)
-    elif sys.argv[1] == "augmented":
-        simulate(mppi=augmented_lagrangian_mppi)
     elif sys.argv[1] == "rejection":
         simulate(mppi=rejection_sample_mppi)
     elif sys.argv[1] == "barrier":
