@@ -10,6 +10,7 @@ from vanilla_mppi import vanilla_mppi
 from rejection_sample_mppi import rejection_sample_mppi
 from just_stop_mppi import just_stop_mppi
 from log_barrier_mppi import log_barrier_mppi
+from motion_primitives import motion_primitive_planner
 
 
 def integrator_dynamics(x: np.array, u: np.array) -> np.array:
@@ -112,5 +113,7 @@ if __name__ == "__main__":
         simulate(mppi=rejection_sample_mppi)
     elif sys.argv[1] == "barrier":
         simulate(mppi=log_barrier_mppi)
+    elif sys.argv[1] == "primitive":
+        simulate(mppi=motion_primitive_planner)
     else:
         print(f"Unknown MPPI method: {sys.argv[1]}")

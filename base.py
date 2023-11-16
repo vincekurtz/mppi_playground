@@ -65,7 +65,7 @@ class ProblemData:
     robot_dynamics: callable = None
 
     # Solver parameters
-    temperature: float = 1.0
+    temperature: float = 1e4
     sampling_variance: np.array = np.array([100, 100])
     num_samples: int = 100
     horizon: int = 20
@@ -73,7 +73,7 @@ class ProblemData:
     # Cost function parameters
     state_cost: np.array = np.array([1, 1])
     control_cost: np.array = np.array([0.01, 0.01])
-    obstacle_cost: float = 1e2
+    obstacle_cost: float = 1e3
     obstacle_smoothing_factor: float = 10
 
     # Time step for the dynamics

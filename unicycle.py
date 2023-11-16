@@ -10,6 +10,7 @@ from vanilla_mppi import vanilla_mppi
 from rejection_sample_mppi import rejection_sample_mppi
 from just_stop_mppi import just_stop_mppi
 from log_barrier_mppi import log_barrier_mppi
+from motion_primitives import motion_primitive_planner
 
 
 def unicycle_dynamics(x: np.array, u: np.array) -> np.array:
@@ -63,19 +64,19 @@ def simulate(mppi: callable = vanilla_mppi):
         for obstacle in data.obstacles:
             obstacle.draw(screen)
 
-        # Draw the robot and the target
-        pygame.draw.circle(screen, (0, 0, 255), (x[0], x[1]), 10)
-        pygame.draw.circle(screen, (0, 255, 0), (data.x_nom[0], data.x_nom[1]), 10)
-
         # Perform an MPPI step
         Us, Xs = mppi(x, u_nom, data)
 
         # Visualize a few of the MPPI samples
-        for i in range(min(len(Xs), 20)):
+        for i in range(min(len(Xs), data.num_samples)):
             x_traj = Xs[i]
             for t in range(len(x_traj)-1):
                 pygame.draw.line(screen, (255, 0, 0),
                                  x_traj[t, :2], x_traj[t+1, :2], width=1)
+        
+        # Draw the robot and the target
+        pygame.draw.circle(screen, (0, 0, 255), (x[0], x[1]), 10)
+        pygame.draw.circle(screen, (0, 255, 0), (data.x_nom[0], data.x_nom[1]), 10)
 
         # Visualize the best trajectory with a thicker line
         x_star = Xs[-1]
@@ -122,5 +123,7 @@ if __name__ == "__main__":
         simulate(mppi=rejection_sample_mppi)
     elif sys.argv[1] == "barrier":
         simulate(mppi=log_barrier_mppi)
+    elif sys.argv[1] == "primitive":
+        simulate(mppi=motion_primitive_planner)
     else:
         print(f"Unknown MPPI method: {sys.argv[1]}")
