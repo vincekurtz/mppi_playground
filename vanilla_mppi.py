@@ -22,8 +22,9 @@ def compute_cost(x: np.array, u: np.array, data: ProblemData) -> float:
     """
     Given the state x and control, compute the running cost.
     """
-    state_cost = np.linalg.norm(x - data.x_nom)**2
-    control_cost = data.control_cost * np.linalg.norm(u)**2
+    x_err = x - data.x_nom
+    state_cost = x_err.T @ np.diag(data.state_cost) @ x_err
+    control_cost = u.T @ np.diag(data.control_cost) @ u
 
     obstacle_cost = 0
     for obstacle in data.obstacles:

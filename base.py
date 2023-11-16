@@ -71,7 +71,8 @@ class ProblemData:
     horizon: int = 20
 
     # Cost function parameters
-    control_cost: float = 0.01
+    state_cost: np.array = np.array([1, 1])
+    control_cost: np.array = np.array([0.01, 0.01])
     obstacle_cost: float = 1e2
     obstacle_smoothing_factor: float = 10
 
