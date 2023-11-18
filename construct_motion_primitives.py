@@ -8,24 +8,9 @@
 
 import numpy as np
 import matplotlib.pyplot as plt
+import pickle
 
-def unicycle_dynamics(x, u, dt):
-    """
-    Forward dynamics of the unicycle robot.
-
-    Args:
-        x: state vector [px, py, theta]
-        u: control vector [v, omega]
-        dt: time step
-
-    Returns:
-        x_next: next state vector
-    """
-    x_next = np.zeros(3)
-    x_next[0] = x[0] + u[0] * np.cos(x[2]) * dt
-    x_next[1] = x[1] + u[0] * np.sin(x[2]) * dt
-    x_next[2] = x[2] + u[1] * dt
-    return x_next
+from dynamics import unicycle_dynamics
 
 def get_trajectory(x_nom, num_steps, dt):
     """
@@ -136,6 +121,15 @@ if __name__=="__main__":
 
     # Generate trajectories
     x_trajs, u_trajs = generate_trajectories(radius, num_samples, num_steps, dt)
+
+    # Add a zero input option to the set of motion primitives
+    u_trajs.append(np.zeros((2, num_steps-1)))
+
+    # Save the primitives to a file
+    fname = "motion_primitves.pkl"
+    print(f"Saving motion primitives to {fname}")
+    with open(fname, 'wb') as f:
+        pickle.dump(u_trajs, f)  # MPPI only needs the control tapes
 
     # Plot the trajectories
     plt.figure()
