@@ -18,6 +18,12 @@ class Obstacle:
     def __init__(self, x: np.array, y: np.array, width: float, height: float):
         """
         Create an obstacle with the given parameters. 
+
+        Args:
+            x: The x-coordinate of the center of the obstacle.
+            y: The y-coordinate of the center of the obstacle.
+            width: The width of the obstacle.
+            height: The height of the obstacle.
         """
         self.left = x - width / 2
         self.right = x + width / 2
@@ -30,6 +36,12 @@ class Obstacle:
         """
         Compute the signed distance from the given point to the obstacle.
         This is negative if the point is inside the obstacle.
+
+        Args:
+            pos: The point (a.k.a. robot position) to compute the distance to.
+
+        Returns:
+            dist: the shortest distance from the point to the obstacle.
         """
         dx = max(self.left - pos[0], pos[0] - self.right)
         dy = max(self.top - pos[1], pos[1] - self.bottom)
@@ -38,16 +50,29 @@ class Obstacle:
     def contains(self, pos: np.array) -> bool:
         """
         Check if the given point is inside the obstacle.
+
+        Args:
+            pos: The point (a.k.a. robot position) to check.
+
+        Returns:
+            True if the point is inside the obstacle, False otherwise.
         """
         return self.left <= pos[0] <= self.right and self.top <= pos[1] <= self.bottom
 
-    def draw(self, screen: pygame.Surface):
+    def draw(self, screen: pygame.Surface, buffer: float = 0.1, pixels_per_meter: int = 100):
         """
         Draw the obstacle for pygame.
+
+        Args:
+            screen: The pygame surface to draw on.
+            buffer: The amount to shrink the obstacle by before drawing, in meters, to account for the robot's radius.
+            pixels_per_meter: The number of pygame pixels that represent one meter.
         """
-        buffer = 10   # a little extra space to account for the robot's radius
-        pygame.draw.rect(screen, (0, 0, 0), (self.left+buffer,
-                         self.top+buffer, self.width-2*buffer, self.height-2*buffer))
+        left_px = int((self.left + buffer) * pixels_per_meter)
+        top_px = int((self.top + buffer) * pixels_per_meter)
+        width_px = int((self.width - 2*buffer) * pixels_per_meter)
+        height_px = int((self.height - 2*buffer) * pixels_per_meter)
+        pygame.draw.rect(screen, (0, 0, 0), (left_px, top_px, width_px, height_px))
 
 
 @dataclass
@@ -61,53 +86,42 @@ class ProblemData:
     # Obstacles
     obstacles: List[Obstacle]
 
-    # Robot dynamics xdot = f(x, u)
-    robot_dynamics: callable = None
-
     # Solver parameters
-    temperature: float = 1e4
-    sampling_variance: np.array = np.array([100, 100])
-    num_samples: int = 100
-    horizon: int = 20
+    mppi_lambda: float = 0.05
+    mppi_sample_variance: np.array = np.array([0.4, 0.4])
+    mppi_num_samples: int = 100
+    mppi_horizon: int = 10
+    mppi_dt: float = 0.1
+
+    # Experimental settings
+    rejection: bool = False
+    motion_primitves: bool = False
+    sample_mppi: bool = True
 
     # Cost function parameters
-    state_cost: np.array = np.array([1, 1])
-    control_cost: np.array = np.array([0.01, 0.01])
+    state_cost: np.array = np.array([20, 20, 0])
+    control_cost: np.array = np.array([2, 2])
     obstacle_cost: float = 1e3
     obstacle_smoothing_factor: float = 10
 
-    # Time step for the dynamics
-    time_step: float = 0.01
+    # Time step for the simulated dynamics
+    sim_time_step: float = 0.01
 
 
-def sample_control_tape(u_nom: np.array, data: ProblemData) -> np.array:
+def unicycle_dynamics(x, u, dt):
     """
-    Given the the nominal control u_nom, return a perturbed control tape that is
-    sampled from a Gaussian distribution centered at u_nom.
-    """
-    u = np.zeros(u_nom.shape)
-    for t in range(data.horizon):
-        u[t,:] = np.random.normal(u_nom[t,:], data.sampling_variance)
-    return u
-
-
-def rollout(x0: np.array,
-            u_tape: np.array,
-            data: ProblemData) -> np.array:
-    """
-    Given the initial state x0 and the control tape u_tape, return the
-    resulting state trajectory.
+    Forward dynamics of the unicycle robot.
 
     Args:
-        x0: The initial state.
-        u_tape: The control tape.
-        data: Problem data, including parameters, obstacles, target state, etc.
+        x: state vector [px, py, theta]
+        u: control vector [v, omega]
+        dt: time step
 
+    Returns:
+        x_next: next state vector
     """
-    x = x0
-    x_traj = [x]
-    for u in u_tape:
-        xdot = data.robot_dynamics(x, u)
-        x = x + xdot * data.time_step
-        x_traj.append(x)
-    return np.array(x_traj)
+    x_next = np.zeros(3)
+    x_next[0] = x[0] + u[0] * np.cos(x[2]) * dt
+    x_next[1] = x[1] + u[0] * np.sin(x[2]) * dt
+    x_next[2] = x[2] + u[1] * dt
+    return x_next
