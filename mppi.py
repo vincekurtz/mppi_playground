@@ -6,6 +6,7 @@
 
 import numpy as np
 from typing import List
+import pickle
 
 from base import ProblemData, unicycle_dynamics
 
@@ -66,16 +67,19 @@ def running_cost(x: np.array, u: np.array, data: ProblemData) -> float:
         x: The state.
         u: The control.
         data: Problem data, including parameters, obstacles, target state, etc.
+
+    Returns:
+        cost: The running cost, including obstacle avoidance penalty
     """
     x_err = x - data.x_nom
     state_cost = x_err.T @ np.diag(data.state_cost) @ x_err
     control_cost = u.T @ np.diag(data.control_cost) @ u
 
     obstacle_cost = 0
-    #for obstacle in data.obstacles:
-    #    phi = obstacle.signed_distance(x)
-    #    c = -smoothmin(0, phi, data.obstacle_smoothing_factor)
-    #    obstacle_cost += data.obstacle_cost * c**2
+    for obstacle in data.obstacles:
+        phi = obstacle.signed_distance(x)
+        c = -smoothmin(0, phi, data.obstacle_smoothing_factor)
+        obstacle_cost += data.obstacle_cost * c**2
 
     return state_cost + control_cost + obstacle_cost
 
@@ -88,12 +92,32 @@ def compute_trajectory_cost(x_traj: np.array, u_traj: np.array, data: ProblemDat
         x_traj: The state trajectory.
         u_traj: The control tape.
         data: Problem data, including parameters, obstacles, target state, etc.
+
+    Returns:
+        cost: The total cost of the trajectory.
     """
     cost = 0.0
     for t in range(data.mppi_horizon - 1):
         cost += running_cost(x_traj[t,:], u_traj[t,:], data)
     # TODO: consider adding a terminal cost
     return cost
+
+def contains_collisions(x_traj: np.array, data: ProblemData) -> bool:
+    """
+    Check if a given state trajectory contains any collisions.
+
+    Args:
+        x_traj: The state trajectory.
+        data: Problem data, including parameters, obstacles, target state, etc.
+
+    Returns:
+        True if the trajectory contains a collision, False otherwise.
+    """
+    for x in x_traj:
+        for obstacle in data.obstacles:
+            if obstacle.contains(x):
+                return True
+    return False
 
 
 def do_mppi_iteration(x0: np.array,
@@ -112,16 +136,36 @@ def do_mppi_iteration(x0: np.array,
     Return a list of control tapes and a list of state trajectories, where the
     last element of each list is the best control tape and state trajectory.
     """
+    assert data.sample_mppi or data.motion_primitives, "We need some sort of samples!"
+
     # Sample some trajectories
     Us = []
     Xs = []
     costs = []
-    for _ in range(data.mppi_num_samples):
-        u_traj = sample_control_tape(u_guess, data)
-        x_traj = rollout(x0, u_traj, data)
-        Us.append(u_traj)
-        Xs.append(x_traj)
-        costs.append(compute_trajectory_cost(x_traj, u_traj, data))
+
+    if data.sample_mppi:
+        # Collect samples from MPPI
+        for _ in range(data.mppi_num_samples):
+            u_traj = sample_control_tape(u_guess, data)
+            x_traj = rollout(x0, u_traj, data)
+            if not data.rejection or not contains_collisions(x_traj, data):
+                # Only keep the trajectory if it is collision-free, or if
+                # rejection sampling is turned off
+                Us.append(u_traj)
+                Xs.append(x_traj)
+                costs.append(compute_trajectory_cost(x_traj, u_traj, data))
+    if data.motion_primitives:
+        # Collect samples from the motion primitives
+        with open("motion_primitives.pkl", 'rb') as f:
+            # TODO: avoid loading from disk every iteration
+            u_prim = pickle.load(f)
+
+        for u_traj in u_prim:
+            print(u_traj.shape)
+            x_traj = rollout(x0, u_traj, data)
+            Us.append(u_traj)
+            Xs.append(x_traj)
+            costs.append(compute_trajectory_cost(x_traj, u_traj, data))
 
     # Compute the weights
     costs = np.array(costs)

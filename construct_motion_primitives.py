@@ -10,7 +10,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import pickle
 
-from dynamics import unicycle_dynamics
+from base import unicycle_dynamics
 
 def get_trajectory(x_nom, num_steps, dt):
     """
@@ -108,7 +108,7 @@ def generate_trajectories(radius, num_samples, num_steps, dt):
         # Compute a trajectory to the target state 
         x_traj, u_traj = get_trajectory(x_nom, num_steps, dt)
         x_trajs.append(x_traj)
-        u_trajs.append(u_traj)
+        u_trajs.append(u_traj.T)   # TODO: fix indexing to [t, :] instead of [:, t]
     return x_trajs, u_trajs
 
 
@@ -116,17 +116,17 @@ if __name__=="__main__":
     # Set some parameters
     radius = 1.0
     num_samples = 20
-    num_steps = 20
+    num_steps = 10
     dt = 0.1
 
     # Generate trajectories
     x_trajs, u_trajs = generate_trajectories(radius, num_samples, num_steps, dt)
 
     # Add a zero input option to the set of motion primitives
-    u_trajs.append(np.zeros((2, num_steps-1)))
+    u_trajs.append(np.zeros((num_steps-1, 2)))
 
     # Save the primitives to a file
-    fname = "motion_primitves.pkl"
+    fname = "motion_primitives.pkl"
     print(f"Saving motion primitives to {fname}")
     with open(fname, 'wb') as f:
         pickle.dump(u_trajs, f)  # MPPI only needs the control tapes

@@ -87,7 +87,7 @@ class ProblemData:
     obstacles: List[Obstacle]
 
     # Solver parameters
-    mppi_lambda: float = 0.05
+    mppi_lambda: float = 1.0
     mppi_sample_variance: np.array = np.array([0.4, 0.4])
     mppi_num_samples: int = 100
     mppi_horizon: int = 10
@@ -95,14 +95,14 @@ class ProblemData:
 
     # Experimental settings
     rejection: bool = False
-    motion_primitves: bool = False
-    sample_mppi: bool = True
+    motion_primitives: bool = True
+    sample_mppi: bool = False
 
     # Cost function parameters
     state_cost: np.array = np.array([20, 20, 0])
     control_cost: np.array = np.array([2, 2])
     obstacle_cost: float = 1e3
-    obstacle_smoothing_factor: float = 10
+    obstacle_smoothing_factor: float = 0.1
 
     # Time step for the simulated dynamics
     sim_time_step: float = 0.01
