@@ -15,7 +15,8 @@ def simulate():
     """
     # Set up pygame
     pygame.init()
-    ppm = 100   # pixels per meter
+    ppm = 150     # pixels per meter
+    radius = 0.1  # robot radius
     screen = pygame.display.set_mode([5*ppm, 5*ppm])
 
     # Set the initial state
@@ -38,9 +39,23 @@ def simulate():
         # Fill the background
         screen.fill((255, 255, 255))
 
+        # Draw a little 1-meter scale near the bottom left corner
+        grey = (150, 150, 150)
+        scale_start = np.array((0.5, 4.5))
+        scale_end = np.array((1.5, 4.5))
+        pygame.draw.line(screen, grey, ppm*scale_start, ppm*scale_end, width=2)
+        pygame.draw.line(screen, grey, ppm*scale_start, ppm*(scale_start + np.array([0, 0.1])), width=2)
+        pygame.draw.line(screen, grey, ppm*scale_start, ppm*(scale_start - np.array([0, 0.1])), width=2)
+        pygame.draw.line(screen, grey, ppm*scale_end, ppm*(scale_end + np.array([0, 0.1])), width=2)
+        pygame.draw.line(screen, grey, ppm*scale_end, ppm*(scale_end - np.array([0, 0.1])), width=2)
+
+        font = pygame.font.SysFont('Arial', 16)
+        text = font.render('1 meter', True, grey)
+        screen.blit(text, ppm*(scale_start + np.array([0.3, 0.1])))
+
         # Draw the obstacles
         for obstacle in data.obstacles:
-            obstacle.draw(screen, pixels_per_meter=ppm)
+            obstacle.draw(screen, buffer=radius, pixels_per_meter=ppm)
 
         # Perform an MPPI step
         Us, Xs = do_mppi_iteration(x, u_nom, data)
@@ -53,8 +68,9 @@ def simulate():
                                  ppm*x_traj[t, :2], ppm*x_traj[t+1, :2], width=1)
         
         # Draw the robot and the target
-        pygame.draw.circle(screen, (0, 0, 255), (ppm*x[0], ppm*x[1]), 10)
-        pygame.draw.circle(screen, (0, 255, 0), (ppm*data.x_nom[0], ppm*data.x_nom[1]), 10)
+        pygame.draw.circle(screen, (0, 0, 255), (ppm*x[0], ppm*x[1]), ppm*radius)
+        pygame.draw.circle(screen, (0, 255, 0), (ppm*data.x_nom[0],
+            ppm*data.x_nom[1]), ppm*radius)
 
         # Visualize the best trajectory with a thicker line
         x_star = Xs[-1]
