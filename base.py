@@ -88,10 +88,11 @@ class ProblemData:
 
     # Solver parameters
     mppi_lambda: float = 0.05
-    mppi_sample_variance: np.array = np.array([0.5, 0.5])
+    mppi_sample_variance: np.array = np.array([0.4, 0.4])
     mppi_num_samples: int = 100
     mppi_horizon: int = 10
     mppi_dt: float = 0.1
+    mppi_u_max: np.array = np.array([4.0, 4.0])
 
     # Experimental settings
     reject_samples: bool = True

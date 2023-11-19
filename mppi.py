@@ -23,8 +23,10 @@ def sample_control_tape(u_nom: np.array, data: ProblemData) -> np.array:
         u: The perturbed control tape.
     """
     u = np.zeros(u_nom.shape)
+
     for t in range(data.mppi_horizon - 1):
         u[t,:] = np.random.normal(u_nom[t,:], data.mppi_sample_variance)
+        u[t,:] = np.clip(u[t,:], -data.mppi_u_max, data.mppi_u_max)
     return u
 
 
