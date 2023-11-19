@@ -148,7 +148,7 @@ def do_mppi_iteration(x0: np.array,
         for _ in range(data.mppi_num_samples):
             u_traj = sample_control_tape(u_guess, data)
             x_traj = rollout(x0, u_traj, data)
-            if not data.rejection or not contains_collisions(x_traj, data):
+            if not data.reject_samples or not contains_collisions(x_traj, data):
                 # Only keep the trajectory if it is collision-free, or if
                 # rejection sampling is turned off
                 Us.append(u_traj)
@@ -161,11 +161,11 @@ def do_mppi_iteration(x0: np.array,
             u_prim = pickle.load(f)
 
         for u_traj in u_prim:
-            print(u_traj.shape)
             x_traj = rollout(x0, u_traj, data)
-            Us.append(u_traj)
-            Xs.append(x_traj)
-            costs.append(compute_trajectory_cost(x_traj, u_traj, data))
+            if not data.reject_primitives or not contains_collisions(x_traj, data):
+                Us.append(u_traj)
+                Xs.append(x_traj)
+                costs.append(compute_trajectory_cost(x_traj, u_traj, data))
 
     # Compute the weights
     costs = np.array(costs)

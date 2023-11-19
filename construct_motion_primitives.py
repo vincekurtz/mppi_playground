@@ -33,8 +33,8 @@ def get_trajectory(x_nom, num_steps, dt):
 
     # Feedback gains
     K_v = 1
-    K_rho = 2
-    K_alpha = 3
+    K_rho = 3
+    K_alpha = 6
     K_beta = -1
 
     assert K_alpha + 5/3 * K_beta - 2/np.pi * K_rho > 0, "Unstable gains"
@@ -114,7 +114,7 @@ def generate_trajectories(radius, num_samples, num_steps, dt):
 
 if __name__=="__main__":
     # Set some parameters
-    radius = 1.0
+    radius = 0.5
     num_samples = 20
     num_steps = 10
     dt = 0.1
@@ -123,7 +123,7 @@ if __name__=="__main__":
     x_trajs, u_trajs = generate_trajectories(radius, num_samples, num_steps, dt)
 
     # Add a zero input option to the set of motion primitives
-    u_trajs.append(np.zeros((num_steps-1, 2)))
+    #u_trajs.append(np.zeros((num_steps-1, 2)))
 
     # Save the primitives to a file
     fname = "motion_primitives.pkl"

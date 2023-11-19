@@ -87,20 +87,21 @@ class ProblemData:
     obstacles: List[Obstacle]
 
     # Solver parameters
-    mppi_lambda: float = 1.0
-    mppi_sample_variance: np.array = np.array([0.4, 0.4])
+    mppi_lambda: float = 0.05
+    mppi_sample_variance: np.array = np.array([0.5, 0.5])
     mppi_num_samples: int = 100
     mppi_horizon: int = 10
     mppi_dt: float = 0.1
 
     # Experimental settings
-    rejection: bool = False
+    reject_samples: bool = True
+    reject_primitives: bool = False
     motion_primitives: bool = True
-    sample_mppi: bool = False
+    sample_mppi: bool = True
 
     # Cost function parameters
     state_cost: np.array = np.array([20, 20, 0])
-    control_cost: np.array = np.array([2, 2])
+    control_cost: np.array = np.array([1.0, 1.0])
     obstacle_cost: float = 1e3
     obstacle_smoothing_factor: float = 0.1
 

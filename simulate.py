@@ -46,7 +46,7 @@ def simulate():
         Us, Xs = do_mppi_iteration(x, u_nom, data)
 
         # Visualize a few of the MPPI samples
-        for i in range(min(len(Xs), data.mppi_num_samples)):
+        for i in range(len(Xs)):
             x_traj = Xs[i]
             for t in range(len(x_traj)-1):
                 pygame.draw.line(screen, (255, 0, 0),
@@ -59,7 +59,7 @@ def simulate():
         # Visualize the best trajectory with a thicker line
         x_star = Xs[-1]
         for t in range(len(x_star)-1):
-            pygame.draw.line(screen, (0, 0, 255),
+            pygame.draw.line(screen, (0, 0, 0),
                              ppm*x_star[t, :2], ppm*x_star[t+1, :2], width=3)
 
         # Update the nominal control tape
