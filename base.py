@@ -96,10 +96,10 @@ class ProblemData:
 
     # Experimental settings
     sample_mppi: bool = False
-    reject_samples: bool = False
+    reject_samples: bool = True
     
     motion_primitives: bool = True
-    reject_primitives: bool = False
+    reject_primitives: bool = True
 
     # Cost function parameters
     state_cost: np.array = np.array([20, 20, 0])

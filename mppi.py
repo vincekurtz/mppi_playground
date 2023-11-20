@@ -169,6 +169,8 @@ def do_mppi_iteration(x0: np.array,
                 Xs.append(x_traj)
                 costs.append(compute_trajectory_cost(x_traj, u_traj, data))
 
+    assert len(costs) > 0, "No collision-free candidate trajectories!"
+
     # Compute the weights
     costs = np.array(costs)
     min_cost = np.min(costs)
