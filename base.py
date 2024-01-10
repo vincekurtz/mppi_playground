@@ -88,18 +88,18 @@ class ProblemData:
 
     # Solver parameters
     mppi_lambda: float = 5.0
-    mppi_sample_variance: np.array = np.array([0.4, 0.4])
+    mppi_sample_variance: np.array = np.array([0.2, 5.5])
     mppi_num_samples: int = 100
     mppi_horizon: int = 10
     mppi_dt: float = 0.1
-    mppi_u_max: np.array = np.array([5.0, 5.5])
+    mppi_u_max: np.array = np.array([5.0, 0.5])
 
     # Experimental settings
     sample_mppi: bool = False
-    reject_samples: bool = True
+    reject_samples: bool = False
     
     motion_primitives: bool = True
-    reject_primitives: bool = True
+    reject_primitives: bool = False
 
     # Cost function parameters
     state_cost: np.array = np.array([20, 20, 0])

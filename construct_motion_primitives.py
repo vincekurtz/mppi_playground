@@ -116,7 +116,7 @@ def generate_trajectories(radius, num_samples, num_steps, dt):
 if __name__=="__main__":
     # Set some parameters
     radius = 0.5
-    num_samples = 20
+    num_samples = 10
     num_steps = 10
     dt = 0.1
 

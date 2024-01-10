@@ -25,7 +25,7 @@ def simulate():
     # Create problem data
     obstacles = [
         Obstacle(4, 1, 1, 1),
-        Obstacle(2, 3, 3, 0.5),]
+        Obstacle(2, 3, 3, 0.3),]
     data = ProblemData(x_nom=np.array([4, 2.5, 0]),
                        obstacles=obstacles)
 
