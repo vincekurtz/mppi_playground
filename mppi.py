@@ -25,7 +25,7 @@ def sample_control_tape(u_nom: np.array, data: ProblemData) -> np.array:
     u = np.zeros(u_nom.shape)
 
     for t in range(data.mppi_horizon - 1):
-        u[t,:] = np.random.normal(u_nom[t,:], data.mppi_sample_variance)
+        u[t,:] = np.random.normal(u_nom[t,:], np.sqrt(data.mppi_sample_variance))
         u[t,:] = np.clip(u[t,:], -data.mppi_u_max, data.mppi_u_max)
     return u
 
@@ -144,7 +144,7 @@ def do_mppi_iteration(x0: np.array,
     Us = []
     Xs = []
     costs = []
-
+    
     if data.sample_mppi:
         # Collect samples from MPPI
         for _ in range(data.mppi_num_samples):
@@ -181,6 +181,11 @@ def do_mppi_iteration(x0: np.array,
     u_nom = np.zeros(u_guess.shape)
     for u_tape, weight in zip(Us, weights):
         u_nom += weight * u_tape
+
+    # Add extra noise, if requested
+    if data.extra_noise:
+        for t in range(data.mppi_horizon - 1):
+            u_nom[t,:] += np.sqrt(2 * data.mppi_sample_variance) * np.random.normal(np.zeros(2), np.ones(2))
 
     # Compute the new state trajectory
     x_nom = rollout(x0, u_nom, data)

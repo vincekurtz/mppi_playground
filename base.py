@@ -87,7 +87,7 @@ class ProblemData:
     obstacles: List[Obstacle]
 
     # Solver parameters
-    mppi_lambda: float = 1.0
+    mppi_lambda: float = 0.1
     mppi_sample_variance: np.array = np.array([0.2, 1.0])
     mppi_num_samples: int = 100
     mppi_horizon: int = 10
@@ -100,6 +100,8 @@ class ProblemData:
     
     motion_primitives: bool = False
     reject_primitives: bool = False
+
+    extra_noise: bool = True
 
     # Cost function parameters
     state_cost: np.array = np.array([20, 20, 0])
