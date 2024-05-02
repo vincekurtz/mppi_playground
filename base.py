@@ -101,7 +101,7 @@ class ProblemData:
     motion_primitives: bool = False
     reject_primitives: bool = False
 
-    extra_noise: bool = True
+    extra_noise: bool = False
 
     # Cost function parameters
     state_cost: np.array = np.array([20, 20, 0])
